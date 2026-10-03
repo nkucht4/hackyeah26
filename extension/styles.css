@@ -1,13 +1,13 @@
 :root {
-  --paper: #f4f3ec;
-  --ink: #1d2d28;
-  --muted: #6d7972;
-  --line: #d7dcd2;
-  --green: #176f4b;
-  --green-dark: #10563a;
-  --mint: #d9e9dd;
-  --coral: #d87053;
-  --error: #a83e30;
+  --paper: #f5f3fa;
+  --ink: #29233a;
+  --muted: #756f83;
+  --line: #ddd9e8;
+  --green: #6d5ce7;
+  --green-dark: #32276f;
+  --mint: #d9d4fa;
+  --coral: #d8785e;
+  --error: #a83e4a;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -54,7 +54,7 @@ async function analyzeTextBackend(text) {
       start: correction.start,
       end: correction.end,
       text: correction.original,
-      type: "Correction",
+      type: (correction.labels || []).join(", "),
       reason: correction.reason,
       replacement: correction.suggested
     }));
