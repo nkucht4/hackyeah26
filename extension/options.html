@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Directly — Settings</title>
+
+  <link
+    rel="stylesheet"
+    href="options.css"
+  >
+</head>
+
+<body>
+
+  <main class="settings">
+
+    <header class="settings-header">
+
+      <div class="logo">
+        Directly
+      </div>
+
+      <p>
+        Communication linter
+      </p>
+
+    </header>
+
+
+    <section class="settings-card">
+
+      <h1>
+        Where should Directly appear?
+      </h1>
+
+      <p class="description">
+        Directly will show the
+        <strong>Check my tone</strong>
+        button only on websites you add here.
+      </p>
+
+
+      <div class="add-site">
+
+        <input
+          id="siteInput"
+          type="text"
+          placeholder="np. slack.com"
+          autocomplete="off"
+        >
+
+        <button
+          id="addSiteButton"
+          type="button"
+        >
+          + Add website
+        </button>
+
+      </div>
+
+
+      <div
+        id="errorMessage"
+        class="error"
+        hidden
+      ></div>
+
+
+      <div
+        id="siteList"
+        class="site-list"
+      ></div>
+
+
+      <div class="save-status" id="saveStatus"></div>
+
+    </section>
+
+
+    <section class="settings-card small">
+
+      <h2>
+        How it works
+      </h2>
+
+      <ul>
+        <li>
+          Directly runs only on the websites
+          listed above.
+        </li>
+
+        <li>
+          Other websites won't show
+          the Directly button unless you add them.
+        </li>
+
+        <li>
+          You can still use
+          <strong>Check with Directly</strong>
+          from the right-click menu on selected text.
+        </li>
+      </ul>
+
+    </section>
+
+  </main>
+
+
+  <script src="options.js"></script>
+
+</body>
+</html>

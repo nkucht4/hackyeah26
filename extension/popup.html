@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Directly</title>
+
+  <link
+    rel="stylesheet"
+    href="popup.css"
+  >
+</head>
+
+<body>
+
+  <main class="popup">
+
+    <header class="popup-header">
+      <div class="logo">Directly</div>
+      <div class="subtitle">
+        Communication linter
+      </div>
+    </header>
+
+
+    <section class="current-site">
+
+      <div class="section-label">
+        CURRENT WEBSITE
+      </div>
+
+      <div
+        id="currentSite"
+        class="current-domain"
+      >
+        Loading...
+      </div>
+
+      <div
+        id="currentStatus"
+        class="current-status"
+      >
+        Checking...
+      </div>
+
+      <button
+        id="toggleCurrentSite"
+        class="primary-button"
+        type="button"
+      >
+        Add this website
+      </button>
+
+    </section>
+
+
+    <section class="enabled-sites">
+
+      <div class="section-title">
+        Enabled websites
+      </div>
+
+      <div
+        id="siteList"
+        class="site-list"
+      ></div>
+
+    </section>
+
+
+    <button
+      id="settingsButton"
+      class="settings-button"
+      type="button"
+    >
+      Settings
+    </button>
+
+  </main>
+
+  <script src="popup.js"></script>
+
+</body>
+</html>
