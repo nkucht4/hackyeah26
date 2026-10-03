@@ -19,9 +19,9 @@ def settings() -> Settings:
     return Settings(
         cors_origins=(
             "http://localhost:3000,"
-            "http://127.0.0.1:3000,"
-            "chrome-extension://test-extension-id"
-        )
+            "http://127.0.0.1:3000"
+        ),
+        extension_id="test-extension-id",
     )
 
 
@@ -118,3 +118,11 @@ def test_cors_rejects_unconfigured_origins(settings: Settings) -> None:
 
     assert response.status_code == 400
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_extension_id_loads_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("EXTENSION_ID", "environment-extension-id")
+
+    settings = Settings(_env_file=None)
+
+    assert "chrome-extension://environment-extension-id" in settings.allowed_origins
