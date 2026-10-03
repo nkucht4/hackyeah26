@@ -1,8 +1,15 @@
+import asyncio
+import logging
+import time
+import uuid
+
 import numpy as np
 from app.features.speech.schemas import SpeechClassificationEvent
 from app.features.speech.service import SpeechClassifier
 from fastrtc import AsyncStreamHandler
 from numpy.typing import NDArray
+
+logger = logging.getLogger(__name__)
 
 
 class AudioWindowBuffer:
@@ -60,16 +67,111 @@ class SpeechAudioStreamHandler(AsyncStreamHandler):
         self.window_seconds = window_seconds
         self.sample_rate = sample_rate
         self.buffer = AudioWindowBuffer(window_seconds)
+        self._stream_id = uuid.uuid4().hex[:8]
+        self._received_frames = 0
+        self._classified_windows = 0
+        self._idle_emit_logged = False
+        logger.info(
+            "DEBUG_VOICe stream_handler_created stream=%s window_seconds=%.2f target_sample_rate=%d",
+            self._stream_id,
+            window_seconds,
+            sample_rate,
+        )
 
     async def receive(self, frame: tuple[int, NDArray[np.int16]]) -> None:
         sample_rate, audio = frame
-        for window in self.buffer.append(audio, sample_rate):
-            scores = await self.classifier.classify(window, sample_rate)
-            event = SpeechClassificationEvent(**scores)
-            await self.send_message(event.model_dump_json())
+        self._received_frames += 1
+        pending_before = self.buffer.pending_samples
+        try:
+            windows = self.buffer.append(audio, sample_rate)
+        except Exception:
+            logger.exception(
+                "DEBUG_VOICe audio_buffer_failed stream=%s frame=%d sample_rate=%d frame_samples=%d",
+                self._stream_id,
+                self._received_frames,
+                sample_rate,
+                len(audio),
+            )
+            raise
+
+        pending_after = self.buffer.pending_samples
+        crossed_second = (
+            pending_after // sample_rate > pending_before // sample_rate
+        )
+        if self._received_frames == 1 or windows or crossed_second:
+            logger.info(
+                "DEBUG_VOICe audio_received stream=%s frame=%d sample_rate=%d frame_samples=%d pending_samples=%d pending_seconds=%.2f completed_windows=%d",
+                self._stream_id,
+                self._received_frames,
+                sample_rate,
+                len(audio),
+                pending_after,
+                pending_after / sample_rate,
+                len(windows),
+            )
+        else:
+            logger.debug(
+                "DEBUG_VOICe audio_frame stream=%s frame=%d sample_rate=%d frame_samples=%d pending_samples=%d",
+                self._stream_id,
+                self._received_frames,
+                sample_rate,
+                len(audio),
+                pending_after,
+            )
+
+        for window in windows:
+            self._classified_windows += 1
+            started_at = time.perf_counter()
+            logger.info(
+                "DEBUG_VOICe classification_started stream=%s window=%d samples=%d sample_rate=%d",
+                self._stream_id,
+                self._classified_windows,
+                len(window),
+                sample_rate,
+            )
+            try:
+                scores = await self.classifier.classify(window, sample_rate)
+                event = SpeechClassificationEvent(**scores)
+                message = event.model_dump_json()
+            except Exception:
+                logger.exception(
+                    "DEBUG_VOICe classification_failed stream=%s window=%d",
+                    self._stream_id,
+                    self._classified_windows,
+                )
+                raise
+
+            logger.info(
+                "DEBUG_VOICe classification_succeeded stream=%s window=%d elapsed_ms=%.1f confidence=%.2f assertiveness=%.2f",
+                self._stream_id,
+                self._classified_windows,
+                (time.perf_counter() - started_at) * 1000,
+                event.confidence,
+                event.assertiveness,
+            )
+            try:
+                await self.send_message(message)
+            except Exception:
+                logger.exception(
+                    "DEBUG_VOICe score_send_failed stream=%s window=%d",
+                    self._stream_id,
+                    self._classified_windows,
+                )
+                raise
+            logger.info(
+                "DEBUG_VOICe score_sent stream=%s window=%d",
+                self._stream_id,
+                self._classified_windows,
+            )
 
     async def emit(self) -> None:
-        return None
+        if not self._idle_emit_logged:
+            logger.info(
+                "DEBUG_VOICe output_idle stream=%s; score responses use the data channel",
+                self._stream_id,
+            )
+            self._idle_emit_logged = True
+        await asyncio.sleep(0.1)
 
     def copy(self) -> "SpeechAudioStreamHandler":
         return SpeechAudioStreamHandler(
