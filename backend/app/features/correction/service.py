@@ -3,7 +3,7 @@ import os
 from groq import Groq
 from pydantic import BaseModel, Field
 from app.features.correction.schemas import CorrectionItem, CorrectionResponse
-
+from app.features.tags.model import get_tags
 
 
 
@@ -85,11 +85,15 @@ class CorrectionService:
                         if start_idx == -1:
                             start_idx, end_idx = 0, 0
 
+                    tags_data = get_tags(original_text)
+                    labels = [t["tag"] for t in tags_data]
+
                     temp_items.append(
                         {
                             "original": original_text,
                             "suggested": item.get("suggested", ""),
                             "reason": item.get("reason", ""),
+                            "labels": labels,
                             "start": start_idx,
                             "end": end_idx,
                         }
