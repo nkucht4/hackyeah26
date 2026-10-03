@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f3ec">
+  <title>Directly | Voice confidence</title>
+  <link rel="stylesheet" href="recorder.css">
+</head>
+<body>
+  <main class="recorder-shell">
+    <header class="topbar">
+      <a class="wordmark" href="popup.html" aria-label="Directly home">Directly<span>.</span></a>
+      <div class="connection-indicator" id="connectionIndicator" data-state="idle">
+        <span class="indicator-dot" aria-hidden="true"></span>
+        <span id="connectionLabel">Ready</span>
+      </div>
+    </header>
+
+    <section class="recording-view" aria-labelledby="pageTitle">
+      <p class="eyebrow">VOICE CHECK</p>
+      <h1 id="pageTitle">Find your speaking confidence.</h1>
+      <p class="intro">Your voice is analyzed live while you speak.</p>
+
+      <button class="record-button" id="recordButton" type="button" aria-label="Start recording" aria-pressed="false">
+        <span class="record-rings" aria-hidden="true"></span>
+        <svg class="mic-icon" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="12" y="4" width="8" height="16" rx="4"></rect>
+          <path d="M8 15v1a8 8 0 0 0 16 0v-1M16 24v4m-5 0h10"></path>
+        </svg>
+      </button>
+      <span class="button-caption" id="buttonCaption">Start recording</span>
+      <p class="live-status" id="liveStatus" aria-live="polite">Tap the microphone when you’re ready.</p>
+
+      <p class="error-message" id="errorMessage" role="alert" hidden></p>
+
+      <section class="scores" aria-label="Speech scores">
+        <div class="score score-primary">
+          <div class="score-heading">
+            <span class="score-label">Confidence</span>
+            <span class="score-value" id="confidenceValue">--<span class="percent">%</span></span>
+          </div>
+          <div class="score-track" role="meter" aria-label="Confidence score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span class="score-fill" id="confidenceFill"></span>
+          </div>
+        </div>
+        <div class="score score-secondary">
+          <div class="score-heading">
+            <span class="score-label">Assertiveness</span>
+            <span class="score-value" id="assertivenessValue">--<span class="percent">%</span></span>
+          </div>
+          <div class="score-track" role="meter" aria-label="Assertiveness score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span class="score-fill" id="assertivenessFill"></span>
+          </div>
+        </div>
+      </section>
+      <p class="score-note" id="scoreNote">Scores update after each two-second audio window.</p>
+    </section>
+
+    <footer class="footer">
+      <span>Audio is sent to your configured Directly backend.</span>
+      <span id="backendAddress">127.0.0.1:8000</span>
+    </footer>
+  </main>
+  <script src="recorder.js"></script>
+</body>
+</html>

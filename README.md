@@ -18,6 +18,14 @@ Set `CORS_ORIGINS` in `backend/.env` to a comma-separated list of exact origins.
 Keep the local development origins and add the deployed extension origin when
 its ID is known, for example `chrome-extension://<extension-id>`. Do not use `*`.
 
+The extension's **Speech recorder** toolbar view connects to
+`http://127.0.0.1:8000`. For local use, add the exact extension origin shown by
+the recorder page (`window.location.origin`) to `CORS_ORIGINS`; Firefox origins
+begin with `moz-extension://` and Chromium origins begin with
+`chrome-extension://`. Keep the existing local development origins in the list.
+The backend host permissions for both `localhost` and `127.0.0.1` are declared
+in the extension manifest.
+
 Start the API from the repository root with Uvicorn:
 
 ```bash

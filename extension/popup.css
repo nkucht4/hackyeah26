@@ -222,6 +222,46 @@ body {
   transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
+.speech-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  margin-bottom: 8px;
+  padding: 9px;
+  border: 1px solid #176f4b;
+  border-radius: 8px;
+  background: #176f4b;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.speech-button:hover {
+  border-color: #10563a;
+  background: #10563a;
+}
+
+.speech-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(23, 111, 75, 0.18);
+}
+
+.speech-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .settings-button:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
