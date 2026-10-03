@@ -89,12 +89,23 @@ function getEditors() {
 
 function addButton(editor) {
   if (editor.dataset.directlyReady) return;
+  const parent = editor.parentElement;
+  if (!parent) return;
+
   editor.dataset.directlyReady = "1";
+
+  if (getComputedStyle(parent).position === "static")
+    parent.style.position = "relative";
 
   const button = document.createElement("button");
   button.type = "button";
   button.className = "directly-check-button";
-  button.textContent = "✨ Check my tone";
+  button.title = "Check my tone";
+
+  const logo = document.createElement("img");
+  logo.src = browser.runtime.getURL("logo.png");
+  logo.alt = "Directly";
+  button.appendChild(logo);
 
   button.onclick = e => {
     e.preventDefault();
@@ -103,13 +114,6 @@ function addButton(editor) {
     analyzeEditor(editor);
   };
 
-  const parent = editor.parentElement;
-  if (!parent) return;
-
-  if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
-  button.style.position = "absolute";
-  button.style.right = "8px";
-  button.style.bottom = "8px";
   parent.appendChild(button);
 }
 
