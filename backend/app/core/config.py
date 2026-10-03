@@ -1,5 +1,7 @@
 from functools import lru_cache
+from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +14,9 @@ class Settings(BaseSettings):
 
     app_name: str = "HackYeah26 API"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    speech_window_seconds: float = Field(default=2.0, gt=0)
+    speech_sample_rate: int = Field(default=16_000, gt=0)
+    speech_model_path: Path | None = None
 
     @property
     def allowed_origins(self) -> list[str]:

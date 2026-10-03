@@ -37,6 +37,19 @@ The OpenAPI UI is available at `http://127.0.0.1:8000/docs`.
 	range and interpretation will be documented when the model is selected.
 - Emotion classification currently returns `503` until a model adapter is
 	configured. The API contract can be exercised with a fake adapter in tests.
+- Speech classification uses FastRTC WebRTC at
+	`POST /api/v1/speech/webrtc/offer`. Send mono browser audio; FastRTC converts
+	it to 16 kHz, and the backend classifies each completed two-second window.
+	Results arrive over the WebRTC data channel as JSON, for example:
+	`{"type":"speech.classification","confidence":72.0,"assertiveness":64.0}`.
+	The two values are independent percentages and currently come from a fixed
+	placeholder classifier. `SPEECH_WINDOW_SECONDS` and `SPEECH_SAMPLE_RATE`
+	configure the window length and target rate.
+- The speech model notebook saves an encoder, processor, and
+	`confidence_head.pt` under a checkpoint directory. Model loading is not
+	implemented yet; setting `SPEECH_MODEL_PATH` currently fails explicitly.
+	When the loader is implemented, install `backend[speech-model]` for PyTorch
+	and Transformers support.
 
 The correction endpoint is a structural placeholder and does not yet call Groq
 or perform text correction.
