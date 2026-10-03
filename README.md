@@ -1,6 +1,59 @@
 # Directly — HackYeah 2026
 
-An in-situ communication linter and assertiveness assistant helping women communicate with authority. Directly detects self-diminishing linguistic patterns in web text fields and offers real-time voice assertiveness practice.
+Directly is a smart browser extension that acts as a real-time communication linter for professional workplace tools. Instead of rewriting entire emails with generic chatbots, Directly provides a targeted, privacy-conscious feedback loop directly in your text fields and a voice training sandbox.
+
+---
+
+# Concept
+
+Women in technical and professional environments systematically face the "likability Trap" (the Double Bind): direct, concise communication is frequently penalized as abrasive or aggressive, while indirect communication leads to being dismissed as hesitant or junior.
+
+To navigate this systemic bias, women subconsciously adopt self-diminishing communication patterns (hedging, minimizers, erasing personal credit). Research proves that women have a significantly lower threshold for what constitutes an offense, leading them to issue unnecessary apologies for routine work duties (e.g., asking for updates, reporting bugs, taking leave).
+
+In tech workflows, this results in:
+
+- Eroded technical authority: Messages diluted with “just wondering” or “probably a dumb question” get deprioritized in backlogs and pull requests.
+
+- Massive cognitive tax: Significant daily time and mental bandwidth wasted on second-guessing and repeatedly editing emails to manage the recipient's comfort.
+
+- Career stagnation: A direct correlation between habitual self-diminishing language and missed leadership promotions, despite equal technical competence.
+
+Directly is a smart browser extension that acts as a real-time communication linter for professional workplace tools. Instead of rewriting entire emails with generic chatbots, Directly provides a targeted, privacy-conscious feedback loop directly in your text fields and a voice training sandbox.
+
+Key Technical Features:
+
+- DOM Interceptor & Selective Capture: Hooks into text fields and captures only manually selected text or snippets submitted via the Directly button, eliminating unnecessary data transmission.
+- Precision Tagging & Structured API: A FastAPI backend powered by BERT-Tiny scores and classifies linguistic patterns (such as Downplaying, Over-Softened phrasing, and Politeness), returning exact character offsets, actionable suggestions, and context-aware rationales via strict JSON schemas.
+- Granular In-Situ Control: Enables users to interactively accept or reject suggested replacements phrase by phrase directly in the DOM, keeping the author in full control of their voice.
+- Take a step further with Real-Time Voice Check Sandbox: Analyzes spoken delivery in live two-second audio windows to measure Confidence and Assertiveness scores before high-stakes meetings.
+
+Benefits for Users & Organizations:
+
+- Removes the cognitive burden of second-guessing everyday messages, protects against the Likability Trap, and builds long-term assertiveness in both written and spoken communication.
+- Faster resolution of blocker tickets through clear, direct peer communication and a practical, scalable tool supporting genuine inclusion without patronizing training.
+
+---
+
+# Project status
+
+Project Goal:
+
+Directly helps women eliminate self-diminishing habits (unwarranted apologies, minimizers) in everyday workplace tools, protecting their authority without sounding aggressive.
+
+The entire concept, design, frontend extension, and ML/backend architecture were developed from scratch during this hackathon.
+
+
+What’s Done So Far:
+
+- Text Linter (Fully Working): Browser extension capturing input in text fields, FastAPI backend with structured JSON schemas, BERT-Tiny classification (downplaying, over-softening), and live in-situ Accept/Reject controls.
+
+- Voice Check (UI & Capture Ready): Built the audio-capture interface and 2-second streaming pipeline; live speech inference is still in progress due to time limits.
+
+---
+
+# Demo
+
+[Demo link](https://www.youtube.com/watch?v=YugcIuSmoR0)
 
 ---
 
