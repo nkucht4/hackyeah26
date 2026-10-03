@@ -12,6 +12,11 @@ class CorrectionRequest(BaseModel):
             raise ValueError("text must contain non-whitespace characters")
         return normalized_text
 
-
+class CorrectionItem(BaseModel):
+    original: str = Field(description="Exact weak phrase found in the text")
+    suggested: str = Field(description="Confident and professional replacement")
+    reason: str = Field(description="Short explanation of why this weakens the message")
+    
 class CorrectionResponse(BaseModel):
-    corrected_text: str
+    corrections: list[CorrectionItem]
+

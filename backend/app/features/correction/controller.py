@@ -6,5 +6,5 @@ async def process_correction(
     payload: CorrectionRequest,
     service: CorrectionService,
 ) -> CorrectionResponse:
-    corrected_text = await service.correct_text(payload.text)
-    return CorrectionResponse(corrected_text=corrected_text)
+    corrections = await service.correct_text(payload.text)
+    return corrections

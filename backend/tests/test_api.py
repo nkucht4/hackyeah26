@@ -53,7 +53,7 @@ def test_correction_returns_placeholder_text(settings: Settings) -> None:
     response = client.post("/api/v1/correction", json={"text": "Fix this sentence."})
 
     assert response.status_code == 200
-    assert response.json() == {"corrected_text": "Placeholder text"}
+    assert response.json() == {"corrections": "Placeholder text"}
 
 
 def test_correction_rejects_blank_text(settings: Settings) -> None:

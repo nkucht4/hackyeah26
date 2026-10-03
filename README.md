@@ -30,7 +30,7 @@ The OpenAPI UI is available at `http://127.0.0.1:8000/docs`.
 
 - `GET /health` returns `{"status":"ok"}`.
 - `POST /api/v1/correction` accepts `{"text":"..."}` and currently returns
-	`{"corrected_text":"Placeholder text"}`. Replace the placeholder in the
+	`{"corrections":"Placeholder text"}`. Replace the placeholder in the
 	correction service when the correction logic/provider is selected.
 - `POST /api/v1/emotions/classify` accepts `{"text":"..."}` and returns a
 	`scores` map keyed by emotion label. Scores are model-native values; their
