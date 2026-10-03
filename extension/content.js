@@ -136,6 +136,15 @@ function getText(el) {
   return el instanceof HTMLTextAreaElement ? el.value : el.innerText || "";
 }
 
+function appendTextWithBreaks(parent, text) {
+  const parts = text.split("\n");
+
+  parts.forEach((part, i) => {
+    if (part) parent.append(document.createTextNode(part));
+    if (i < parts.length - 1) parent.append(document.createElement("br"));
+  });
+}
+
 function renderText(editor, text, issues) {
   if (editor instanceof HTMLTextAreaElement) {
     renderTextarea(editor, text, issues);
@@ -146,12 +155,15 @@ function renderText(editor, text, issues) {
   let cursor = 0;
 
   for (const issue of issues) {
-    if (issue.start > cursor) editor.append(document.createTextNode(text.slice(cursor, issue.start)));
+    if (issue.start > cursor) {
+      appendTextWithBreaks(editor, text.slice(cursor, issue.start));
+    }
 
     const span = document.createElement("span");
     span.className = "directly-highlight";
     span.dataset.id = issue.id;
-    span.textContent = text.slice(issue.start, issue.end);
+    appendTextWithBreaks(span, text.slice(issue.start, issue.end));
+
     span.onclick = e => {
       e.stopPropagation();
       showTooltip(issue, span);
@@ -161,7 +173,10 @@ function renderText(editor, text, issues) {
     cursor = issue.end;
   }
 
-  if (cursor < text.length) editor.append(document.createTextNode(text.slice(cursor)));
+  if (cursor < text.length) {
+    appendTextWithBreaks(editor, text.slice(cursor));
+  }
+
   dispatchInput(editor);
 }
 
