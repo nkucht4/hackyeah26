@@ -22,6 +22,9 @@ const siteList =
 const settingsButton =
   document.getElementById("settingsButton");
 
+const speechRecorderButton =
+  document.getElementById("speechRecorderButton");
+
 
 // NORMALIZE DOMAIN
 function normalizeDomain(domain) {
@@ -286,6 +289,16 @@ settingsButton.addEventListener(
   "click",
   () => {
     browser.runtime.openOptionsPage();
+  }
+);
+
+speechRecorderButton.addEventListener(
+  "click",
+  async () => {
+    await browser.tabs.create({
+      url: browser.runtime.getURL("recorder.html")
+    });
+    window.close();
   }
 );
 
