@@ -24,7 +24,44 @@ function siteEnabled() {
 }
 
 async function analyzeText(text) {
-  return analyzeTextLocally(text);
+  return analyzeTextBackend(text);
+}
+
+
+async function analyzeTextBackend(text) {
+  try {
+    const response = await fetch("https://leonore-untrading-laurence.ngrok-free.dev/api/v1/correction", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
+
+    const body = await response.text();
+
+    console.log("Directly backend status:", response.status);
+    console.log("Directly backend response:", body);
+
+    if (!response.ok) {
+      throw new Error(`Backend ${response.status}: ${body}`);
+    }
+
+    const data = JSON.parse(body);
+
+    return (data.corrections || []).map((correction, index) => ({
+      id: `backend-${Date.now()}-${index}`,
+      start: correction.start,
+      end: correction.end,
+      text: correction.original,
+      type: "Correction",
+      reason: correction.reason,
+      replacement: correction.suggested
+    }));
+  } catch (error) {
+    console.error("Directly backend error:", error);
+    throw error;
+  }
 }
 
 function analyzeTextLocally(text) {
@@ -180,6 +217,54 @@ function renderText(editor, text, issues) {
   dispatchInput(editor);
 }
 
+function replaceTextRange(root, start, end, replacement) {
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_TEXT
+  );
+
+  const nodes = [];
+  let node;
+
+  while ((node = walker.nextNode())) {
+    nodes.push(node);
+  }
+
+  let position = 0;
+  let startNode = null;
+  let endNode = null;
+  let startOffset = 0;
+  let endOffset = 0;
+
+  for (const textNode of nodes) {
+    const nextPosition = position + textNode.nodeValue.length;
+
+    if (!startNode && start >= position && start <= nextPosition) {
+      startNode = textNode;
+      startOffset = start - position;
+    }
+
+    if (end >= position && end <= nextPosition) {
+      endNode = textNode;
+      endOffset = end - position;
+      break;
+    }
+
+    position = nextPosition;
+  }
+
+  if (!startNode || !endNode) return false;
+
+  const range = document.createRange();
+  range.setStart(startNode, startOffset);
+  range.setEnd(endNode, endOffset);
+
+  range.deleteContents();
+  range.insertNode(document.createTextNode(replacement));
+
+  return true;
+}
+
 function renderTextarea(editor, text, issues) {
   editor.dataset.directlyText = text;
   editor.dataset.directlyIssues = JSON.stringify(issues);
@@ -286,23 +371,48 @@ function acceptIssue(issue) {
   const editor = activeEditor;
   if (!editor) return;
 
-  const text = getText(editor);
-  const index = text.indexOf(issue.text);
-
-  if (index === -1) return removeTooltip();
-
-  const value = text.slice(0, index) + issue.replacement + text.slice(index + issue.text.length);
-
   if (editor instanceof HTMLTextAreaElement) {
+    const text = getText(editor);
+
+    if (
+      issue.start < 0 ||
+      issue.end > text.length ||
+      text.slice(issue.start, issue.end) !== issue.text
+    ) {
+      removeTooltip();
+      return;
+    }
+
+    const value =
+      text.slice(0, issue.start) +
+      issue.replacement +
+      text.slice(issue.end);
+
     editor.value = value;
     editor._directlyOverlay?.remove();
+
+    activeIssues = activeIssues.filter(x => x.id !== issue.id);
+
+    if (activeIssues.length) {
+      renderTextarea(editor, value, activeIssues);
+    }
   } else {
-    editor.innerText = value;
+    const highlight = [...editor.querySelectorAll(".directly-highlight")]
+      .find(el => el.dataset.id === issue.id);
+
+    if (!highlight) {
+      removeTooltip();
+      return;
+    }
+
+    const replacement = document.createTextNode(issue.replacement || "");
+    highlight.replaceWith(replacement);
+
+    activeIssues = activeIssues.filter(x => x.id !== issue.id);
   }
 
   dispatchInput(editor);
   removeTooltip();
-  analyzeEditor(editor);
 }
 
 function rejectIssue(issue) {

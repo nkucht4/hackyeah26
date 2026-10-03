@@ -6,7 +6,8 @@
   "permissions": [
     "activeTab",
     "contextMenus",
-    "storage"
+    "storage",
+    "https://leonore-untrading-laurence.ngrok-free.dev/*"
   ],
   "icons": {
     "16": "logo.png",
