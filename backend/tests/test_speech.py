@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from collections.abc import Mapping
 from contextlib import nullcontext
 from types import SimpleNamespace
@@ -101,6 +102,20 @@ def test_handler_copy_has_an_independent_audio_buffer() -> None:
     assert second.buffer.pending_samples == 0
 
 
+def test_handler_emit_yields_instead_of_spinning() -> None:
+    handler = SpeechAudioStreamHandler(FakeSpeechClassifier())
+
+    async def check_emit_yields() -> None:
+        emit_task = asyncio.create_task(handler.emit())
+        await asyncio.sleep(0)
+        assert not emit_task.done()
+        emit_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await emit_task
+
+    asyncio.run(check_emit_yields())
+
+
 def test_placeholder_classifier_returns_fixed_scores() -> None:
     classifier = PlaceholderSpeechClassifier()
 
@@ -182,10 +197,30 @@ def test_speech_scores_are_limited_to_finite_percentages() -> None:
         SpeechClassificationEvent(confidence=101.0, assertiveness=64.0)
 
 
-def test_fast_rtc_offer_endpoint_is_mounted() -> None:
-    app = create_app(settings=Settings(), speech_classifier=FakeSpeechClassifier())
+def test_fast_rtc_offer_logs_preflight_and_offer_status(caplog) -> None:
+    app = create_app(
+        settings=Settings(cors_origins="moz-extension://test"),
+        speech_classifier=FakeSpeechClassifier(),
+    )
+    caplog.set_level(logging.INFO, logger="app.main")
     client = TestClient(app)
 
-    response = client.post("/api/v1/speech/webrtc/offer", json={})
+    preflight = client.options(
+        "/api/v1/speech/webrtc/offer",
+        headers={
+            "Origin": "moz-extension://test",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    response = client.post(
+        "/api/v1/speech/webrtc/offer",
+        json={},
+        headers={"Origin": "moz-extension://test"},
+    )
 
+    assert preflight.status_code == 200
     assert response.status_code == 422
+    assert "DEBUG_VOICe offer_http_finished" in caplog.text
+    assert "method=OPTIONS status=200" in caplog.text
+    assert "method=POST status=422" in caplog.text

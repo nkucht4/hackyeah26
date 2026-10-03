@@ -1,5 +1,6 @@
 const BACKEND_URL = "http://127.0.0.1:8000";
 const SPEECH_OFFER_URL = `${BACKEND_URL}/api/v1/speech/webrtc/offer`;
+const SPEECH_LOG_PREFIX = "DEBUG_VOICe";
 
 const recordButton = document.getElementById("recordButton");
 const buttonCaption = document.getElementById("buttonCaption");
@@ -19,22 +20,35 @@ let microphoneStream = null;
 let dataChannel = null;
 let connectionTimer = null;
 let isStarting = false;
+let currentWebRtcId = null;
 
 let hasReceivedScore = false;
 
+function logSpeech(event, details = {}) {
+  console.info(`${SPEECH_LOG_PREFIX} ${event}`, details);
+}
 
 recordButton.addEventListener("click", () => {
   if (peerConnection || isStarting) {
+    logSpeech("record_button_stop", {
+      webRtcId: currentWebRtcId,
+      connectionState: peerConnection?.connectionState ?? "none",
+      isStarting
+    });
     stopRecording();
     return;
   }
 
+  logSpeech("record_button_start");
   startRecording();
 });
 
 window.addEventListener("pagehide", () => stopRecording(false));
 
 async function startRecording() {
+  currentWebRtcId = createWebRtcId();
+  const webRtcId = currentWebRtcId;
+  const startedAt = performance.now();
   isStarting = true;
   recordButton.disabled = true;
   errorMessage.hidden = true;
@@ -43,6 +57,7 @@ async function startRecording() {
   setConnectionState("connecting", "Connecting");
   liveStatus.textContent = "Requesting microphone access…";
   resetScores();
+  logSpeech("recording_start", { webRtcId, offerUrl: SPEECH_OFFER_URL });
 
   try {
     microphoneStream = await navigator.mediaDevices.getUserMedia({
@@ -52,15 +67,41 @@ async function startRecording() {
         noiseSuppression: true
       }
     });
+    logSpeech("microphone_ready", {
+      webRtcId,
+      tracks: microphoneStream.getAudioTracks().length,
+      settings: microphoneStream.getAudioTracks()[0]?.getSettings()
+    });
 
     const connection = new RTCPeerConnection({ iceServers: [] });
     peerConnection = connection;
+    connection.addEventListener("connectionstatechange", () => {
+      logSpeech("peer_connection_state", {
+        webRtcId,
+        state: connection.connectionState
+      });
+    });
+    connection.addEventListener("iceconnectionstatechange", () => {
+      logSpeech("ice_connection_state", {
+        webRtcId,
+        state: connection.iceConnectionState
+      });
+    });
+    connection.addEventListener("icegatheringstatechange", () => {
+      logSpeech("ice_gathering_state", {
+        webRtcId,
+        state: connection.iceGatheringState
+      });
+    });
     microphoneStream.getTracks().forEach(track => {
       connection.addTrack(track, microphoneStream);
     });
 
     const channel = connection.createDataChannel("text");
     dataChannel = channel;
+    channel.addEventListener("open", () => {
+      logSpeech("data_channel_open", { webRtcId, label: channel.label });
+    });
     channel.addEventListener("open", () => {
       if (peerConnection !== connection) return;
       channel.send("handshake");
@@ -73,6 +114,11 @@ async function startRecording() {
       setConnectionState("recording", "Recording");
       connectionTimer = window.setTimeout(() => {
         if (peerConnection !== connection || hasReceivedScore) return;
+        logSpeech("score_timeout", {
+          webRtcId,
+          timeoutMs: 10000,
+          elapsedMs: Math.round(performance.now() - startedAt)
+        });
         stopRecording();
         showError("No speech score arrived. Speak continuously for at least two seconds, then check the backend logs if this continues.");
       }, 10000);
@@ -80,15 +126,23 @@ async function startRecording() {
     });
     channel.addEventListener("message", handleScoreMessage);
     channel.addEventListener("close", () => {
+      logSpeech("data_channel_close", {
+        webRtcId,
+        wasActive: peerConnection === connection
+      });
       if (peerConnection === connection) {
         stopRecording();
         showError("The score stream closed. Start a new recording to reconnect.");
       }
     });
+    channel.addEventListener("error", event => {
+      logSpeech("data_channel_error", { webRtcId, eventType: event.type });
+    });
 
     connection.addEventListener("connectionstatechange", () => {
       if (peerConnection !== connection) return;
       if (connection.connectionState === "failed") {
+        logSpeech("peer_connection_failed", { webRtcId });
         stopRecording();
         showError("The backend connection failed. Check that the speech API is running.");
       } else if (connection.connectionState === "disconnected") {
@@ -98,16 +152,27 @@ async function startRecording() {
 
     const offer = await connection.createOffer();
     await connection.setLocalDescription(offer);
+    logSpeech("offer_created", {
+      webRtcId,
+      type: connection.localDescription?.type,
+      iceGatheringState: connection.iceGatheringState
+    });
     await waitForIceGathering(connection);
 
+    logSpeech("offer_post_start", { webRtcId });
     const response = await fetch(SPEECH_OFFER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sdp: connection.localDescription.sdp,
         type: connection.localDescription.type,
-        webrtc_id: createWebRtcId()
+        webrtc_id: webRtcId
       })
+    });
+    logSpeech("offer_post_response", {
+      webRtcId,
+      status: response.status,
+      ok: response.ok
     });
 
     if (!response.ok) {
@@ -116,19 +181,31 @@ async function startRecording() {
     }
 
     const answer = await response.json();
+    logSpeech("offer_answer_received", {
+      webRtcId,
+      answerType: answer.type,
+      status: answer.status
+    });
     if (answer.status === "failed") {
       throw new Error(answer.meta?.error || "The speech service rejected the connection.");
     }
     await connection.setRemoteDescription(answer);
+    logSpeech("remote_description_set", { webRtcId });
 
     connectionTimer = window.setTimeout(() => {
       if (peerConnection === connection && channel.readyState !== "open") {
+        logSpeech("data_channel_timeout", {
+          webRtcId,
+          readyState: channel.readyState,
+          timeoutMs: 15000
+        });
         stopRecording();
         showError("The backend did not open the score channel. Check the API and its CORS settings.");
       }
     }, 15000);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "An unexpected error occurred.";
+    logSpeech("recording_error", { webRtcId, message: detail });
     stopRecording(false);
 
     if (error instanceof TypeError && detail.toLowerCase().includes("fetch")) {
@@ -147,6 +224,7 @@ async function startRecording() {
 }
 
 function stopRecording(showStatus = true) {
+  const webRtcId = currentWebRtcId;
   if (connectionTimer !== null) {
     window.clearTimeout(connectionTimer);
     connectionTimer = null;
@@ -155,9 +233,16 @@ function stopRecording(showStatus = true) {
   const channel = dataChannel;
   const connection = peerConnection;
   const stream = microphoneStream;
+  logSpeech("recording_stop", {
+    webRtcId,
+    showStatus,
+    connectionState: connection?.connectionState ?? "none",
+    channelState: channel?.readyState ?? "none"
+  });
   dataChannel = null;
   peerConnection = null;
   microphoneStream = null;
+  currentWebRtcId = null;
   isStarting = false;
 
   if (channel && channel.readyState !== "closed") channel.close();
@@ -176,14 +261,36 @@ function handleScoreMessage(event) {
   let message;
   try {
     message = JSON.parse(event.data);
-  } catch {
+  } catch (error) {
+    logSpeech("score_message_invalid_json", {
+      webRtcId: currentWebRtcId,
+      message: error instanceof Error ? error.message : "invalid JSON"
+    });
     return;
   }
 
-  if (message?.type !== "speech.classification") return;
-  if (!isPercentage(message.confidence) || !isPercentage(message.assertiveness)) return;
+  if (message?.type !== "speech.classification") {
+    logSpeech("score_message_unexpected_type", {
+      webRtcId: currentWebRtcId,
+      type: message?.type
+    });
+    return;
+  }
+  if (!isPercentage(message.confidence) || !isPercentage(message.assertiveness)) {
+    logSpeech("score_message_invalid_scores", {
+      webRtcId: currentWebRtcId,
+      confidenceValid: isPercentage(message.confidence),
+      assertivenessValid: isPercentage(message.assertiveness)
+    });
+    return;
+  }
 
   hasReceivedScore = true;
+  logSpeech("score_received", {
+    webRtcId: currentWebRtcId,
+    confidence: message.confidence,
+    assertiveness: message.assertiveness
+  });
   if (connectionTimer !== null) {
     window.clearTimeout(connectionTimer);
     connectionTimer = null;
@@ -232,11 +339,15 @@ function createWebRtcId() {
 }
 
 function waitForIceGathering(connection) {
-  if (connection.iceGatheringState === "complete") return Promise.resolve();
+  if (connection.iceGatheringState === "complete") {
+    logSpeech("ice_gathering_complete", { webRtcId: currentWebRtcId });
+    return Promise.resolve();
+  }
 
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       connection.removeEventListener("icegatheringstatechange", onGatheringChange);
+      logSpeech("ice_gathering_timeout", { webRtcId: currentWebRtcId });
       reject(new Error("Timed out while preparing the audio connection."));
     }, 10000);
 
@@ -244,6 +355,7 @@ function waitForIceGathering(connection) {
       if (connection.iceGatheringState !== "complete") return;
       window.clearTimeout(timeout);
       connection.removeEventListener("icegatheringstatechange", onGatheringChange);
+      logSpeech("ice_gathering_complete", { webRtcId: currentWebRtcId });
       resolve();
     }
 
