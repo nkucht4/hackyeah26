@@ -2,7 +2,6 @@ import json
 import os
 from groq import Groq
 from pydantic import BaseModel, Field
-
 from app.features.correction.schemas import CorrectionItem, CorrectionResponse
 
 
@@ -66,14 +65,39 @@ class CorrectionService:
                     parsed_data = {"corrections": []}
                 raw_items = parsed_data.get("corrections", [])
 
-                correction_items = [
-                    CorrectionItem(
-                        original=item.get("original", ""),
-                        suggested=item.get("suggested", ""),
-                        reason=item.get("reason", ""),
+                temp_items = []
+                current_search_index = 0
+
+                for item in raw_items:
+                    original_text = item.get("original", "")
+                    start_idx = text.find(original_text, current_search_index)
+
+                    if start_idx != -1:
+                        end_idx = start_idx + len(original_text)
+                        current_search_index = (
+                            end_idx
+                        )
+                    else:
+                        start_idx = text.find(original_text)
+                        end_idx = (
+                            start_idx + len(original_text) if start_idx != -1 else 0
+                        )
+                        if start_idx == -1:
+                            start_idx, end_idx = 0, 0
+
+                    temp_items.append(
+                        {
+                            "original": original_text,
+                            "suggested": item.get("suggested", ""),
+                            "reason": item.get("reason", ""),
+                            "start": start_idx,
+                            "end": end_idx,
+                        }
                     )
-                    for item in raw_items
-                ]
+
+                correction_items = sorted(
+                    temp_items, key=lambda x: x["start"] if x["start"] != 0 else float("inf")
+                )
 
                 response_obj = CorrectionResponse(corrections=correction_items)
                 return response_obj

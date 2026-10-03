@@ -16,6 +16,8 @@ class CorrectionItem(BaseModel):
     original: str = Field(description="Exact weak phrase found in the text")
     suggested: str = Field(description="Confident and professional replacement")
     reason: str = Field(description="Short explanation of why this weakens the message")
+    start: int
+    end: int
     
 class CorrectionResponse(BaseModel):
     corrections: list[CorrectionItem]
