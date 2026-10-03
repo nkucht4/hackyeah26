@@ -239,15 +239,15 @@ function showTooltip(issue, target) {
     <button class="directly-tooltip-close">×</button>
     <div class="directly-tooltip-title">Directly suggestion</div>
     <div class="directly-tooltip-reason">${escapeHtml(issue.reason)}</div>
-    <div class="directly-tooltip-label">SUGEROWANA ZMIANA</div>
+    <div class="directly-tooltip-label">SUGGESTED CHANGE</div>
     <div class="directly-tooltip-change">
       <span class="directly-old">${escapeHtml(issue.text)}</span>
       <span>→</span>
       <span class="directly-new">${issue.replacement ? escapeHtml(issue.replacement) : "usuń"}</span>
     </div>
     <div class="directly-tooltip-actions">
-      <button class="directly-accept">✓ Akceptuj</button>
-      <button class="directly-reject">Odrzuć</button>
+      <button class="directly-accept">Accept</button>
+      <button class="directly-reject">Reject</button>
     </div>
   `;
 
