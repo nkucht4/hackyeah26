@@ -29,14 +29,17 @@ The OpenAPI UI is available at `http://127.0.0.1:8000/docs`.
 ## API
 
 - `GET /health` returns `{"status":"ok"}`.
+- `POST /api/v1/correction` accepts `{"text":"..."}` and currently returns
+	`{"corrected_text":"Placeholder text"}`. Replace the placeholder in the
+	correction service when the correction logic/provider is selected.
 - `POST /api/v1/emotions/classify` accepts `{"text":"..."}` and returns a
 	`scores` map keyed by emotion label. Scores are model-native values; their
 	range and interpretation will be documented when the model is selected.
 - Emotion classification currently returns `503` until a model adapter is
 	configured. The API contract can be exercised with a fake adapter in tests.
 
-The correction feature is reserved for later work. This backend does not yet
-call Groq or expose a correction endpoint.
+The correction endpoint is a structural placeholder and does not yet call Groq
+or perform text correction.
 
 Run the backend tests from the repository root:
 

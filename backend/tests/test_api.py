@@ -47,6 +47,23 @@ def test_emotion_classification_returns_scores(settings: Settings) -> None:
     assert response.json() == {"scores": {"joy": 0.8, "sadness": 0.2}}
 
 
+def test_correction_returns_placeholder_text(settings: Settings) -> None:
+    client = TestClient(create_app(settings=settings))
+
+    response = client.post("/api/v1/correction", json={"text": "Fix this sentence."})
+
+    assert response.status_code == 200
+    assert response.json() == {"corrected_text": "Placeholder text"}
+
+
+def test_correction_rejects_blank_text(settings: Settings) -> None:
+    client = TestClient(create_app(settings=settings))
+
+    response = client.post("/api/v1/correction", json={"text": "   "})
+
+    assert response.status_code == 422
+
+
 def test_emotion_classification_is_unavailable_without_model(settings: Settings) -> None:
     client = TestClient(create_app(settings=settings))
 
