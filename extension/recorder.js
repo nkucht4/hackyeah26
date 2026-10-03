@@ -19,7 +19,9 @@ let microphoneStream = null;
 let dataChannel = null;
 let connectionTimer = null;
 let isStarting = false;
+
 let hasReceivedScore = false;
+
 
 recordButton.addEventListener("click", () => {
   if (peerConnection || isStarting) {
@@ -37,6 +39,7 @@ async function startRecording() {
   recordButton.disabled = true;
   errorMessage.hidden = true;
   hasReceivedScore = false;
+
   setConnectionState("connecting", "Connecting");
   liveStatus.textContent = "Requesting microphone access…";
   resetScores();
@@ -73,6 +76,7 @@ async function startRecording() {
         stopRecording();
         showError("No speech score arrived. Speak continuously for at least two seconds, then check the backend logs if this continues.");
       }, 10000);
+
     });
     channel.addEventListener("message", handleScoreMessage);
     channel.addEventListener("close", () => {
@@ -117,6 +121,12 @@ async function startRecording() {
     }
     await connection.setRemoteDescription(answer);
 
+    connectionTimer = window.setTimeout(() => {
+      if (peerConnection === connection && channel.readyState !== "open") {
+        stopRecording();
+        showError("The backend did not open the score channel. Check the API and its CORS settings.");
+      }
+    }, 15000);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "An unexpected error occurred.";
     stopRecording(false);
