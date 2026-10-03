@@ -327,8 +327,7 @@ function showTooltip(issue, target) {
     <div class="directly-tooltip-label">SUGGESTED CHANGE</div>
     <div class="directly-tooltip-change">
       <span class="directly-old">${escapeHtml(issue.text)}</span>
-      <span>→</span>
-      <span class="directly-new">${issue.replacement ? escapeHtml(issue.replacement) : "usuń"}</span>
+      <span class="directly-new">${issue.replacement ? escapeHtml(issue.replacement) : "delete"}</span>
     </div>
     <div class="directly-tooltip-actions">
       <button class="directly-accept">Accept</button>
