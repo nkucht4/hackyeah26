@@ -1,12 +1,18 @@
 import asyncio
 import json
 from collections.abc import Mapping
+from contextlib import nullcontext
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
 from app.core.config import Settings
 from app.features.speech.schemas import SpeechClassificationEvent
-from app.features.speech.service import PlaceholderSpeechClassifier
+from app.features.speech.service import (
+    LoadedSpeechClassifier,
+    PlaceholderSpeechClassifier,
+    create_speech_classifier,
+)
 from app.features.speech.stream import AudioWindowBuffer, SpeechAudioStreamHandler
 from app.main import create_app
 from fastapi.testclient import TestClient
@@ -101,6 +107,70 @@ def test_placeholder_classifier_returns_fixed_scores() -> None:
     scores = asyncio.run(classifier.classify(np.zeros(32_000, dtype=np.float32), 16_000))
 
     assert scores == {"confidence": 72.0, "assertiveness": 64.0}
+
+
+def test_loaded_classifier_resamples_and_returns_percentages() -> None:
+    class FakeTensor:
+        def __init__(self, value: float | None = None) -> None:
+            self.value = value
+
+        def to(self, device: object) -> "FakeTensor":
+            return self
+
+        def item(self) -> float:
+            assert self.value is not None
+            return self.value
+
+    class FakeProcessor:
+        def __init__(self) -> None:
+            self.audio: np.ndarray | None = None
+            self.sample_rate: int | None = None
+
+        def __call__(self, audio: np.ndarray, **kwargs: object) -> SimpleNamespace:
+            self.audio = audio
+            self.sample_rate = kwargs["sampling_rate"]  # type: ignore[assignment]
+            return SimpleNamespace(input_values=FakeTensor(), attention_mask=None)
+
+    class FakeEncoder:
+        def __call__(self, **kwargs: object) -> SimpleNamespace:
+            return SimpleNamespace(last_hidden_state=SimpleNamespace(mean=lambda dim: "pooled"))
+
+    class FakeHead:
+        def __call__(self, pooled: str) -> tuple[FakeTensor, FakeTensor]:
+            assert pooled == "pooled"
+            return FakeTensor(0.84), FakeTensor(0.63)
+
+    processor = FakeProcessor()
+    classifier = LoadedSpeechClassifier(
+        torch=SimpleNamespace(inference_mode=nullcontext),
+        processor=processor,
+        encoder=FakeEncoder(),
+        head=FakeHead(),
+        device="cpu",
+        sample_rate=8,
+        max_seconds=1.0,
+    )
+
+    scores = asyncio.run(
+        classifier.classify(np.array([0.0, 0.5, 1.0], dtype=np.float32), 4)
+    )
+
+    assert scores == {"confidence": 84.0, "assertiveness": 63.0}
+    assert processor.sample_rate == 8
+    np.testing.assert_allclose(
+        processor.audio,
+        np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 0.0, 0.0], dtype=np.float32),
+    )
+
+
+def test_speech_classifier_rejects_missing_model_directory(tmp_path) -> None:
+    with pytest.raises(FileNotFoundError, match="Speech model directory"):
+        create_speech_classifier(tmp_path / "missing")
+
+
+def test_speech_classifier_requires_model_metadata(tmp_path) -> None:
+    with pytest.raises(FileNotFoundError, match="Speech model metadata"):
+        create_speech_classifier(tmp_path)
 
 
 def test_speech_scores_are_limited_to_finite_percentages() -> None:

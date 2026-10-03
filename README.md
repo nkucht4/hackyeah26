@@ -10,7 +10,7 @@ backend dependencies, and copy the example configuration:
 
 ```bash
 python3 -m venv venv
-venv/bin/python -m pip install -e "backend[dev]"
+venv/bin/python -m pip install -e "backend[dev,speech-model]"
 cp backend/.env.example backend/.env
 ```
 
@@ -50,14 +50,15 @@ The OpenAPI UI is available at `http://127.0.0.1:8000/docs`.
 	it to 16 kHz, and the backend classifies each completed two-second window.
 	Results arrive over the WebRTC data channel as JSON, for example:
 	`{"type":"speech.classification","confidence":72.0,"assertiveness":64.0}`.
-	The two values are independent percentages and currently come from a fixed
-	placeholder classifier. `SPEECH_WINDOW_SECONDS` and `SPEECH_SAMPLE_RATE`
-	configure the window length and target rate.
-- The speech model notebook saves an encoder, processor, and
-	`confidence_head.pt` under a checkpoint directory. Model loading is not
-	implemented yet; setting `SPEECH_MODEL_PATH` currently fails explicitly.
-	When the loader is implemented, install `backend[speech-model]` for PyTorch
-	and Transformers support.
+- The two values are independent percentages returned by the loaded speech
+  model. `SPEECH_WINDOW_SECONDS` and `SPEECH_SAMPLE_RATE` configure the incoming
+  window length and target rate.
+- The speech model directory contains `config.json`, `encoder/`, `processor/`,
+  and `confidence_head.pt`. Set `SPEECH_MODEL_PATH` to that directory and
+  install `backend[speech-model]` for PyTorch and Transformers support. The
+  backend loads local encoder weights when present; otherwise it loads the
+  pretrained encoder named in `config.json` from Hugging Face. Likewise, an
+  incomplete local processor directory falls back to that pretrained model.
 
 The correction endpoint is a structural placeholder and does not yet call Groq
 or perform text correction.
