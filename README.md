@@ -1,80 +1,73 @@
-# HackYeah26
+# Directly — HackYeah 2026
 
-Backend API for the browser extension. The FastAPI app is organized by feature
-so integrations can evolve independently.
+An in-situ communication linter and assertiveness assistant helping women communicate with authority. Directly detects self-diminishing linguistic patterns in web text fields and offers real-time voice assertiveness practice.
 
-## Backend setup
+---
 
-From the repository root, create the virtual environment if needed, install the
-backend dependencies, and copy the example configuration:
+## Getting Started
+
+### 1. Backend Setup (FastAPI)
+
+Prerequisites: Python 3.10+
+
+From the repository root, set up your virtual environment, install development dependencies, and create the environment configuration file:
 
 ```bash
 python3 -m venv venv
-venv/bin/python -m pip install -e "backend[dev,speech-model]"
+source venv/bin/activate
+venv/bin/python -m pip install -e "backend[dev]"
 cp backend/.env.example backend/.env
+
 ```
 
-Set `CORS_ORIGINS` in `backend/.env` to a comma-separated list of exact origins.
-Keep the local development origins and add the deployed extension origin when
-its ID is known, for example `chrome-extension://<extension-id>`. Do not use `*`.
+Configure `backend/.env`:
 
-The extension's **Speech recorder** toolbar view connects to
-`http://127.0.0.1:8000`. For local use, add the exact extension origin shown by
-the recorder page (`window.location.origin`) to `CORS_ORIGINS`; Firefox origins
-begin with `moz-extension://` and Chromium origins begin with
-`chrome-extension://`. Keep the existing local development origins in the list.
-The backend host permissions for both `localhost` and `127.0.0.1` are declared
-in the extension manifest.
+* Update `CORS_ORIGINS` to a comma-separated list of exact allowed origins (e.g., `http://localhost:3000`, `moz-extension://<addon-uuid>`). Do not use wildcard `*`.
 
-Start the API from the repository root with Uvicorn:
+Start the API service via Uvicorn:
 
 ```bash
 venv/bin/uvicorn --app-dir backend --env-file backend/.env app.main:app --reload
+
 ```
 
-The OpenAPI UI is available at `http://127.0.0.1:8000/docs`.
+* OpenAPI UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+* Health Check: [http://127.0.0.1:8000/health](https://www.google.com/search?q=http://127.0.0.1:8000/health)
 
-## API
-
-- `GET /health` returns `{"status":"ok"}`.
-- `POST /api/v1/correction` accepts `{"text":"..."}` and currently returns
-	`{"corrections":"Placeholder text"}`. Replace the placeholder in the
-	correction service when the correction logic/provider is selected.
-- `POST /api/v1/emotions/classify` accepts `{"text":"..."}` and returns a
-	`scores` map keyed by emotion label. Scores are model-native values; their
-	range and interpretation will be documented when the model is selected.
-- Emotion classification currently returns `503` until a model adapter is
-	configured. The API contract can be exercised with a fake adapter in tests.
-- Speech classification uses FastRTC WebRTC at
-	`POST /api/v1/speech/webrtc/offer`. Send mono browser audio; FastRTC converts
-	it to 16 kHz, and the backend classifies each completed two-second window.
-	Results arrive over the WebRTC data channel as JSON, for example:
-	`{"type":"speech.classification","confidence":72.0,"assertiveness":64.0}`.
-- The two values are independent percentages returned by the loaded speech
-  model. `SPEECH_WINDOW_SECONDS` and `SPEECH_SAMPLE_RATE` configure the incoming
-  window length and target rate.
-- The speech model directory contains `config.json`, `encoder/`, `processor/`,
-  and `confidence_head.pt`. Set `SPEECH_MODEL_PATH` to that directory and
-  install `backend[speech-model]` for PyTorch and Transformers support. The
-  backend loads local encoder weights when present; otherwise it loads the
-  pretrained encoder named in `config.json` from Hugging Face. Likewise, an
-  incomplete local processor directory falls back to that pretrained model.
-
-The correction endpoint is a structural placeholder and does not yet call Groq
-or perform text correction.
-
-Run the backend tests from the repository root:
+Run unit and integration tests:
 
 ```bash
 venv/bin/python -m pytest backend/tests
+
 ```
 
-## Browser extension
+---
 
-Directly is a browser extension designed to help users communicate more clearly, confidently, and directly. It analyzes written text and identifies phrases that may unnecessarily weaken the message, such as excessive apologies, hedging, vague requests, or minimizing language.
+### 2. Firefox Extension Setup
 
-When a supported website is enabled, Directly adds a small button directly to the text editor. The user can also select any part of the text and choose **Check with Directly** from the context menu. Both options use the same analysis flow and send the selected text to the backend API.
+1. Open Firefox and type `about:debugging` in the address bar.
+2. Click **This Firefox** on the left navigation panel.
+3. Click the **Load Temporary Add-on...** button.
+4. Navigate to extension directory (`extension/`) and select its `manifest.json` file.
+5. Once loaded, copy the extension's Internal UUID (accessible under the add-on details) and add `moz-extension://<internal-uuid>` to `CORS_ORIGINS` in `backend/.env` if cross-origin requests require explicit origin matching.
 
-Detected issues are highlighted directly in the original text. Clicking a highlight displays an explanation and a suggested alternative. Users can then **Accept** the suggestion to replace the phrase or **Reject** it to keep the original wording.
+---
 
-The extension is designed to work independently of a specific website, allowing additional sites to be enabled without creating separate integrations for each platform. The frontend communicates with the FastAPI backend, which handles text analysis and returns structured corrections containing the original phrase, suggested replacement, explanation, and text position.
+## API Overview
+
+* `GET /health`: Returns server status `{"status": "ok"}`.
+* `POST /api/v1/correction`: Accepts `{"text": "..."}` and returns structured tone suggestions and character offsets.
+* `POST /api/v1/speech/webrtc/offer`: Handles WebRTC audio channels via FastRTC; evaluates 16 kHz mono streams in 2-second windows to compute assertiveness and confidence indicators.
+
+---
+
+## Architecture & Tech Stack
+
+* **Backend:** FastAPI, Uvicorn, Pydantic, WebRTC / FastRTC
+* **Classification:** BERT-Tiny linguistic pattern models, PyTorch
+
+
+* **Frontend:** Firefox WebExtension, DOM MutationObserver, native input interception
+
+
+```
