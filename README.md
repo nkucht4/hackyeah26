@@ -68,3 +68,13 @@ Run the backend tests from the repository root:
 ```bash
 venv/bin/python -m pytest backend/tests
 ```
+
+## Browser extension
+
+Directly is a browser extension designed to help users communicate more clearly, confidently, and directly. It analyzes written text and identifies phrases that may unnecessarily weaken the message, such as excessive apologies, hedging, vague requests, or minimizing language.
+
+When a supported website is enabled, Directly adds a small button directly to the text editor. The user can also select any part of the text and choose **Check with Directly** from the context menu. Both options use the same analysis flow and send the selected text to the backend API.
+
+Detected issues are highlighted directly in the original text. Clicking a highlight displays an explanation and a suggested alternative. Users can then **Accept** the suggestion to replace the phrase or **Reject** it to keep the original wording.
+
+The extension is designed to work independently of a specific website, allowing additional sites to be enabled without creating separate integrations for each platform. The frontend communicates with the FastAPI backend, which handles text analysis and returns structured corrections containing the original phrase, suggested replacement, explanation, and text position.
