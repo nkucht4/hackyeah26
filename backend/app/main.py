@@ -40,7 +40,7 @@ def create_app(
             sample_rate=app_settings.speech_sample_rate,
         ),
         modality="audio",
-        mode="send-receive",
+        mode="send",
     )
     speech_stream.mount(app, path="/api/v1/speech", tags=["speech"])
     return app

@@ -19,6 +19,7 @@ let microphoneStream = null;
 let dataChannel = null;
 let connectionTimer = null;
 let isStarting = false;
+let hasReceivedScore = false;
 
 recordButton.addEventListener("click", () => {
   if (peerConnection || isStarting) {
@@ -35,6 +36,7 @@ async function startRecording() {
   isStarting = true;
   recordButton.disabled = true;
   errorMessage.hidden = true;
+  hasReceivedScore = false;
   setConnectionState("connecting", "Connecting");
   liveStatus.textContent = "Requesting microphone access…";
   resetScores();
@@ -64,8 +66,13 @@ async function startRecording() {
       recordButton.setAttribute("aria-pressed", "true");
       recordButton.setAttribute("aria-label", "Stop recording");
       buttonCaption.textContent = "Stop recording";
-      liveStatus.textContent = "Listening · scores arrive every two seconds.";
+      liveStatus.textContent = "Microphone connected · waiting for the first score.";
       setConnectionState("recording", "Recording");
+      connectionTimer = window.setTimeout(() => {
+        if (peerConnection !== connection || hasReceivedScore) return;
+        stopRecording();
+        showError("No speech score arrived. Speak continuously for at least two seconds, then check the backend logs if this continues.");
+      }, 10000);
     });
     channel.addEventListener("message", handleScoreMessage);
     channel.addEventListener("close", () => {
@@ -110,12 +117,6 @@ async function startRecording() {
     }
     await connection.setRemoteDescription(answer);
 
-    connectionTimer = window.setTimeout(() => {
-      if (peerConnection === connection && channel.readyState !== "open") {
-        stopRecording();
-        showError("The backend did not open the score channel. Check the API and its CORS settings.");
-      }
-    }, 15000);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "An unexpected error occurred.";
     stopRecording(false);
@@ -172,6 +173,12 @@ function handleScoreMessage(event) {
   if (message?.type !== "speech.classification") return;
   if (!isPercentage(message.confidence) || !isPercentage(message.assertiveness)) return;
 
+  hasReceivedScore = true;
+  if (connectionTimer !== null) {
+    window.clearTimeout(connectionTimer);
+    connectionTimer = null;
+  }
+  errorMessage.hidden = true;
   renderScore(message.confidence, confidenceValue, confidenceFill, confidenceMeter);
   renderScore(message.assertiveness, assertivenessValue, assertivenessFill, assertivenessMeter);
   liveStatus.textContent = "Live score updated.";
